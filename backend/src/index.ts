@@ -11,6 +11,7 @@ import predictionRoutes from './routes/predictions';
 import leaderboardRoutes from './routes/leaderboard';
 import profileRoutes from './routes/profile';
 import outrightRoutes from './routes/outright';
+import tipsRoutes from './routes/tips';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -28,6 +29,7 @@ app.use('/api/predictions', predictionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/outright', outrightRoutes);
+app.use('/api/tips', tipsRoutes);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 

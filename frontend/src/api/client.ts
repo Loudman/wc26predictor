@@ -57,6 +57,20 @@ export const profileApi = {
   getMe: () => http.get<ProfileResponse>('/profile/me').then(r => r.data),
 };
 
+export interface TipResult {
+  homePercent: number;
+  drawPercent: number;
+  awayPercent: number;
+  advice: string;
+  winner: string | null;
+  avgHomeGoals: number | null;
+  avgAwayGoals: number | null;
+}
+
+export const tipsApi = {
+  get: (matchId: number) => http.get<TipResult>(`/tips/${matchId}`).then(r => r.data),
+};
+
 export const outrightApi = {
   getMine: () => http.get<OutrightPick>('/outright').then(r => r.data),
   save: (picks: OutrightPick) => http.put<{ success: boolean }>('/outright', picks).then(r => r.data),

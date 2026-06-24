@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Match, Prediction } from '../types';
-import { predictionsApi } from '../api/client';
+import { predictionsApi, tipsApi, TipResult } from '../api/client';
 
 interface Props {
   match: Match;
@@ -15,8 +15,18 @@ export default function PredictionModal({ match, existing, allPredictions, onClo
   const [away, setAway] = useState(existing?.away_score ?? 0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [tips, setTips] = useState<TipResult | null>(null);
+  const [tipsLoading, setTipsLoading] = useState(true);
 
   const isLocked = match.status === 'FINISHED';
+
+  useEffect(() => {
+    if (isLocked) { setTipsLoading(false); return; }
+    tipsApi.get(match.id)
+      .then(setTips)
+      .catch(() => {})
+      .finally(() => setTipsLoading(false));
+  }, [match.id, isLocked]);
 
   async function save() {
     if (isLocked) return;
@@ -61,6 +71,16 @@ export default function PredictionModal({ match, existing, allPredictions, onClo
             {matchDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}{' '}
             · {matchDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
           </p>
+
+          {/* Bookmaker tips */}
+          {!isLocked && (
+            <TipsPanel
+              tips={tips}
+              loading={tipsLoading}
+              homeTeam={match.homeTeam.shortName || match.homeTeam.name}
+              awayTeam={match.awayTeam.shortName || match.awayTeam.name}
+            />
+          )}
 
           {/* Score input */}
           {!isLocked ? (
@@ -113,6 +133,60 @@ export default function PredictionModal({ match, existing, allPredictions, onClo
             </div>
           )}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TipsPanel({ tips, loading, homeTeam, awayTeam }: {
+  tips: TipResult | null;
+  loading: boolean;
+  homeTeam: string;
+  awayTeam: string;
+}) {
+  if (loading) {
+    return (
+      <div className="bg-gray-800/60 rounded-xl px-4 py-3 flex items-center gap-2">
+        <div className="w-3 h-3 border-2 border-wc-gold border-t-transparent rounded-full animate-spin flex-shrink-0" />
+        <span className="text-xs text-gray-500">Loading bookmaker odds…</span>
+      </div>
+    );
+  }
+  if (!tips) return null;
+
+  const total = tips.homePercent + tips.drawPercent + tips.awayPercent || 100;
+  const homeW = Math.round((tips.homePercent / total) * 100);
+  const drawW = Math.round((tips.drawPercent / total) * 100);
+  const awayW = 100 - homeW - drawW;
+
+  return (
+    <div className="bg-gray-800/60 border border-gray-700/50 rounded-xl px-4 py-3 space-y-2.5">
+      <p className="text-xs text-gray-500 uppercase tracking-wide font-medium">Bookmaker odds</p>
+
+      {/* Probability bar */}
+      <div className="flex rounded-full overflow-hidden h-2 gap-px">
+        <div className="bg-blue-500 transition-all" style={{ width: `${homeW}%` }} />
+        <div className="bg-gray-500 transition-all" style={{ width: `${drawW}%` }} />
+        <div className="bg-red-500 transition-all" style={{ width: `${awayW}%` }} />
+      </div>
+
+      {/* Labels */}
+      <div className="flex justify-between text-xs">
+        <span className="text-blue-400 font-medium">{homeTeam} <span className="text-gray-400">{tips.homePercent}%</span></span>
+        <span className="text-gray-400">Draw <span className="text-gray-300">{tips.drawPercent}%</span></span>
+        <span className="text-red-400 font-medium">{awayTeam} <span className="text-gray-400">{tips.awayPercent}%</span></span>
+      </div>
+
+      {/* Avg goals + advice */}
+      <div className="flex items-center justify-between gap-2 pt-0.5">
+        {tips.avgHomeGoals !== null && (
+          <span className="text-xs text-gray-500">
+            Avg goals: <span className="text-gray-300">{tips.avgHomeGoals.toFixed(1)} – {tips.avgAwayGoals?.toFixed(1)}</span>
+          </span>
+        )}
+        {tips.advice && (
+          <span className="text-xs text-gray-500 italic truncate text-right">"{tips.advice}"</span>
+        )}
       </div>
     </div>
   );
