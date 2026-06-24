@@ -7,12 +7,12 @@ const router = Router();
 
 // Diagnostic endpoint — returns key status + a raw API-Football probe
 router.get('/status', async (_req: Request, res: Response): Promise<void> => {
-  const key = process.env.RAPIDAPI_KEY;
-  if (!key) { res.json({ ok: false, reason: 'RAPIDAPI_KEY not set' }); return; }
+  const key = process.env.API_FOOTBALL_KEY;
+  if (!key) { res.json({ ok: false, reason: 'API_FOOTBALL_KEY not set' }); return; }
 
   try {
-    const probe = await axios.get('https://api-football-v1.p.rapidapi.com/v3/status', {
-      headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com' },
+    const probe = await axios.get('https://v3.football.api-sports.io/status', {
+      headers: { 'x-apisports-key': key },
       timeout: 6000,
     });
     res.json({ ok: true, apiFootball: probe.data });
@@ -23,8 +23,8 @@ router.get('/status', async (_req: Request, res: Response): Promise<void> => {
 });
 
 router.get('/:matchId', async (req: Request, res: Response): Promise<void> => {
-  if (!process.env.RAPIDAPI_KEY) {
-    res.status(501).json({ error: 'RAPIDAPI_KEY not set in environment' });
+  if (!process.env.API_FOOTBALL_KEY) {
+    res.status(501).json({ error: 'API_FOOTBALL_KEY not set in environment' });
     return;
   }
 
