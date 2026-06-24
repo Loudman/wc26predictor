@@ -18,7 +18,13 @@ export default function PredictionModal({ match, existing, allPredictions, onClo
   const [tips, setTips] = useState<TipResult | null>(null);
   const [tipsLoading, setTipsLoading] = useState(true);
 
-  const isLocked = match.status === 'FINISHED';
+  const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED' || (() => {
+    if (match.status === 'FINISHED') return false;
+    const kick = new Date(match.utcDate).getTime();
+    const now = Date.now();
+    return kick <= now && now <= kick + 2.5 * 60 * 60 * 1000;
+  })();
+  const isLocked = match.status === 'FINISHED' || isLive;
 
   useEffect(() => {
     if (isLocked) { setTipsLoading(false); return; }
