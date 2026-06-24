@@ -16,7 +16,7 @@ export default function PredictionModal({ match, existing, allPredictions, onClo
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  const isLocked = match.status === 'IN_PLAY' || match.status === 'PAUSED' || match.status === 'FINISHED';
+  const isLocked = match.status === 'FINISHED';
 
   async function save() {
     if (isLocked) return;
