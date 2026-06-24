@@ -178,14 +178,14 @@ function TipsPanel({ tips, loading, homeTeam, awayTeam }: {
       </div>
 
       {/* Avg goals + advice */}
-      <div className="flex items-center justify-between gap-2 pt-0.5">
-        {tips.avgHomeGoals !== null && (
+      <div className="flex flex-col gap-1 pt-0.5">
+        {tips.avgHomeGoals !== null && tips.avgHomeGoals > 0 && (
           <span className="text-xs text-gray-500">
             Avg goals: <span className="text-gray-300">{tips.avgHomeGoals.toFixed(1)} – {tips.avgAwayGoals?.toFixed(1)}</span>
           </span>
         )}
         {tips.advice && (
-          <span className="text-xs text-gray-500 italic truncate text-right">"{tips.advice}"</span>
+          <span className="text-xs text-gray-500 italic">"{tips.advice}"</span>
         )}
       </div>
     </div>
