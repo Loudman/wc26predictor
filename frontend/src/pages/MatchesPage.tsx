@@ -37,7 +37,11 @@ export default function MatchesPage() {
     return true;
   });
 
-  const grouped = groupByDate(filtered);
+  const sorted = filter === 'finished'
+    ? [...filtered].sort((a, b) => new Date(b.utcDate).getTime() - new Date(a.utcDate).getTime())
+    : filtered;
+
+  const grouped = groupByDate(sorted);
 
   if (loading) {
     return (
