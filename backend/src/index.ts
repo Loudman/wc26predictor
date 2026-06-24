@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import path from 'path';
 import { ready } from './db';
 
 import authRoutes from './routes/auth';
@@ -25,6 +26,13 @@ app.use('/api/predictions', predictionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
+
+// Serve frontend static files in production
+if (process.env.VERCEL) {
+  const dist = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(dist));
+  app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
+}
 
 // Export for Vercel serverless
 export default app;
