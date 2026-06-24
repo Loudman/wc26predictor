@@ -7,17 +7,45 @@ interface Props {
   onClick: () => void;
 }
 
-function calcPoints(pred: Prediction, match: Match): number | null {
-  const { home, away } = match.score.fullTime;
-  if (match.status !== 'FINISHED' || home === null || away === null) return null;
-  const goalError = Math.abs(pred.home_score - home) + Math.abs(pred.away_score - away);
+function stageMultiplier(stage: string): number {
+  switch (stage) {
+    case 'LAST_16':        return 1.5;
+    case 'QUARTER_FINALS': return 2;
+    case 'SEMI_FINALS':    return 3;
+    case 'THIRD_PLACE':    return 2;
+    case 'FINAL':          return 4;
+    default:               return 1; // GROUP_STAGE
+  }
+}
+
+function stageMultiplierLabel(stage: string): string | null {
+  switch (stage) {
+    case 'LAST_16':        return '⚡ 1.5×';
+    case 'QUARTER_FINALS': return '⚡ 2×';
+    case 'SEMI_FINALS':    return '⚡ 3×';
+    case 'THIRD_PLACE':    return '⚡ 2×';
+    case 'FINAL':          return '⚡ 4×';
+    default:               return null;
+  }
+}
+
+export function calcBasePoints(predHome: number, predAway: number, actualHome: number, actualAway: number): number {
+  const goalError = Math.abs(predHome - actualHome) + Math.abs(predAway - actualAway);
   if (goalError === 0) return 5;
-  const predOutcome = Math.sign(pred.home_score - pred.away_score);
-  const actualOutcome = Math.sign(home - away);
+  const predOutcome = Math.sign(predHome - predAway);
+  const actualOutcome = Math.sign(actualHome - actualAway);
   if (predOutcome !== actualOutcome) return 0;
   if (goalError === 1) return 4;
   if (goalError === 2) return 3;
   return 2;
+}
+
+export function calcPoints(pred: Prediction, match: Match): number | null {
+  const { home, away } = match.score.fullTime;
+  if (match.status !== 'FINISHED' || home === null || away === null) return null;
+  const base = calcBasePoints(pred.home_score, pred.away_score, home, away);
+  if (base === 0) return 0;
+  return Math.round(base * stageMultiplier(match.stage));
 }
 
 export default function MatchCard({ match, myPrediction, onClick }: Props) {
@@ -26,6 +54,7 @@ export default function MatchCard({ match, myPrediction, onClick }: Props) {
   const isScheduled = !isFinished && !isLive;
 
   const pts = myPrediction ? calcPoints(myPrediction, match) : null;
+  const multiplierLabel = stageMultiplierLabel(match.stage);
 
   return (
     <div
@@ -47,7 +76,14 @@ export default function MatchCard({ match, myPrediction, onClick }: Props) {
             {isLive ? 'Live' : isFinished ? 'Final' : formatMatchDate(match.utcDate)}
           </span>
         </div>
-        <span className="text-xs text-gray-600">{match.stage.replace(/_/g, ' ')}</span>
+        <div className="flex items-center gap-1.5">
+          {multiplierLabel && (
+            <span className="text-xs font-bold text-wc-gold bg-wc-gold/10 px-1.5 py-0.5 rounded">
+              {multiplierLabel}
+            </span>
+          )}
+          <span className="text-xs text-gray-600">{match.stage.replace(/_/g, ' ')}</span>
+        </div>
       </div>
 
       {/* Teams & Score */}
@@ -80,10 +116,10 @@ export default function MatchCard({ match, myPrediction, onClick }: Props) {
             {pts !== null && (
               <span className={clsx(
                 'text-xs font-bold px-2 py-0.5 rounded-full',
-                pts === 5 ? 'bg-wc-gold/20 text-wc-gold' :
-                pts === 4 ? 'bg-yellow-500/20 text-yellow-400' :
-                pts === 3 ? 'bg-green-600/20 text-green-400' :
-                pts === 2 ? 'bg-green-500/20 text-green-500' :
+                pts >= 18 ? 'bg-wc-gold/20 text-wc-gold' :  // e.g. 5×4=20 (FINAL exact)
+                pts >= 10 ? 'bg-yellow-500/20 text-yellow-400' :
+                pts >= 6  ? 'bg-green-600/20 text-green-400' :
+                pts >= 2  ? 'bg-green-500/20 text-green-500' :
                 'bg-red-500/20 text-red-400'
               )}>
                 +{pts}

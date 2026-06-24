@@ -6,6 +6,7 @@ import Header from './components/Header';
 import LoginPage from './pages/LoginPage';
 import MatchesPage from './pages/MatchesPage';
 import LeaderboardPage from './pages/LeaderboardPage';
+import ProfilePage from './pages/ProfilePage';
 
 interface AuthCtx {
   user: User | null;
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="/login" element={user ? <Navigate to="/" replace /> : <LoginPage />} />
           <Route path="/" element={user ? <MatchesPage /> : <Navigate to="/login" replace />} />
           <Route path="/leaderboard" element={user ? <LeaderboardPage /> : <Navigate to="/login" replace />} />
+          <Route path="/profile" element={user ? <ProfilePage /> : <Navigate to="/login" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>

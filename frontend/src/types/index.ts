@@ -3,6 +3,7 @@ export interface User {
   name: string;
   email: string;
   picture: string;
+  country?: string | null;
 }
 
 export interface Team {
@@ -43,11 +44,70 @@ export interface LeaderboardEntry {
   name: string;
   email: string;
   picture: string;
+  country?: string | null;
   points: number;
   exact: number;
   correct: number;
   wrong: number;
   total: number;
+  streak?: number;
+  bestStreak?: number;
 }
 
 export type MatchFilter = 'all' | 'upcoming' | 'live' | 'finished';
+
+export interface Badge {
+  key: string;
+  label: string;
+  icon: string;
+  description: string;
+  earnedAt: string;
+}
+
+export interface OutrightPick {
+  champion: string | null;
+  finalist: string | null;
+  dark_horse: string | null;
+}
+
+export interface ProfileStats {
+  totalPoints: number;
+  totalPredictions: number;
+  exactCount: number;
+  exactRate: number;
+  correctCount: number;
+  wrongCount: number;
+  currentStreak: number;
+  bestStreak: number;
+}
+
+export interface HistoryEntry {
+  matchId: string;
+  homeScore: number;
+  awayScore: number;
+  utcDate: string;
+  stage: string;
+  matchday: number | null;
+  homeTeam: string;
+  awayTeam: string;
+  actualHome: number;
+  actualAway: number;
+  points: number;
+  basePoints: number;
+}
+
+export interface RecapEntry {
+  date: string;
+  matchCount: number;
+  standings: { id: number; name: string; picture: string; country: string | null; pts: number; preds: number }[];
+  matches: { id: number; homeTeam: string; awayTeam: string; homeScore: number | null; awayScore: number | null; stage: string }[];
+}
+
+export interface MvpEntry {
+  userId: number;
+  name: string;
+  picture: string;
+  country: string | null;
+  points: number;
+  date: string;
+}

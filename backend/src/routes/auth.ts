@@ -44,8 +44,8 @@ router.post('/google', async (req: Request, res: Response): Promise<void> => {
     });
   }
 
-  const result = await db.execute({ sql: 'SELECT id, name, email, picture FROM users WHERE email = ?', args: [email] });
-  const user = result.rows[0] as unknown as { id: number; name: string; email: string; picture: string };
+  const result = await db.execute({ sql: 'SELECT id, name, email, picture, country FROM users WHERE email = ?', args: [email] });
+  const user = result.rows[0] as unknown as { id: number; name: string; email: string; picture: string; country: string | null };
 
   res.json({ token: makeToken(user.id, user.email), user });
 });
@@ -76,10 +76,10 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
   });
 
   const result = await db.execute({
-    sql: 'SELECT id, name, email, picture FROM users WHERE email = ?',
+    sql: 'SELECT id, name, email, picture, country FROM users WHERE email = ?',
     args: [email.trim().toLowerCase()],
   });
-  const user = result.rows[0] as unknown as { id: number; name: string; email: string; picture: string };
+  const user = result.rows[0] as unknown as { id: number; name: string; email: string; picture: string; country: string | null };
 
   res.status(201).json({ token: makeToken(user.id, user.email), user });
 });
@@ -93,11 +93,11 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   }
 
   const result = await db.execute({
-    sql: 'SELECT id, name, email, picture, password_hash FROM users WHERE email = ?',
+    sql: 'SELECT id, name, email, picture, country, password_hash FROM users WHERE email = ?',
     args: [email.trim().toLowerCase()],
   });
   const row = result.rows[0] as unknown as
-    | { id: number; name: string; email: string; picture: string; password_hash: string | null }
+    | { id: number; name: string; email: string; picture: string; country: string | null; password_hash: string | null }
     | undefined;
 
   if (!row || !row.password_hash) {
@@ -107,7 +107,7 @@ router.post('/login', async (req: Request, res: Response): Promise<void> => {
   const ok = await bcrypt.compare(password, row.password_hash);
   if (!ok) { res.status(401).json({ error: 'Invalid email or password' }); return; }
 
-  res.json({ token: makeToken(row.id, row.email), user: { id: row.id, name: row.name, email: row.email, picture: row.picture } });
+  res.json({ token: makeToken(row.id, row.email), user: { id: row.id, name: row.name, email: row.email, picture: row.picture, country: row.country } });
 });
 
 // --- Update name ---
@@ -121,10 +121,20 @@ router.put('/name', requireAuth, async (req: AuthRequest, res: Response): Promis
   res.json({ name: name.trim() });
 });
 
+// --- Update country ---
+router.put('/country', requireAuth, async (req: AuthRequest, res: Response): Promise<void> => {
+  const { country } = req.body as { country?: string };
+  await db.execute({
+    sql: 'UPDATE users SET country = ? WHERE id = ?',
+    args: [country?.trim() || null, req.userId!],
+  });
+  res.json({ country: country?.trim() || null });
+});
+
 // --- List all users ---
 router.get('/users', requireAuth, async (_req: AuthRequest, res: Response): Promise<void> => {
   const result = await db.execute({
-    sql: 'SELECT id, name, email, picture FROM users ORDER BY name ASC',
+    sql: 'SELECT id, name, email, picture, country FROM users ORDER BY name ASC',
     args: [],
   });
   res.json(result.rows);
@@ -136,7 +146,7 @@ router.get('/me', async (req: Request, res: Response): Promise<void> => {
   if (!authHeader?.startsWith('Bearer ')) { res.status(401).json({ error: 'No token' }); return; }
   try {
     const payload = jwt.verify(authHeader.slice(7), process.env.JWT_SECRET!) as { userId: number };
-    const result = await db.execute({ sql: 'SELECT id, name, email, picture FROM users WHERE id = ?', args: [payload.userId] });
+    const result = await db.execute({ sql: 'SELECT id, name, email, picture, country FROM users WHERE id = ?', args: [payload.userId] });
     if (!result.rows[0]) { res.status(404).json({ error: 'User not found' }); return; }
     res.json({ user: result.rows[0] });
   } catch {

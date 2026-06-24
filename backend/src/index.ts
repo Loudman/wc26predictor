@@ -9,6 +9,8 @@ import authRoutes from './routes/auth';
 import matchRoutes from './routes/matches';
 import predictionRoutes from './routes/predictions';
 import leaderboardRoutes from './routes/leaderboard';
+import profileRoutes from './routes/profile';
+import outrightRoutes from './routes/outright';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
@@ -24,6 +26,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/predictions', predictionRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/profile', profileRoutes);
+app.use('/api/outright', outrightRoutes);
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 

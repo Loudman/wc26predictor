@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Match, Prediction, LeaderboardEntry } from '../types';
+import { Match, Prediction, LeaderboardEntry, Badge, OutrightPick, ProfileStats, HistoryEntry, RecapEntry, MvpEntry } from '../types';
 
 const BASE = import.meta.env.VITE_API_URL ?? '/api';
 const http = axios.create({ baseURL: BASE });
@@ -12,7 +12,7 @@ http.interceptors.request.use(config => {
 
 interface AuthResponse {
   token: string;
-  user: { id: number; name: string; email: string; picture: string };
+  user: { id: number; name: string; email: string; picture: string; country?: string | null };
 }
 
 export const authApi = {
@@ -22,9 +22,10 @@ export const authApi = {
     http.post<AuthResponse>('/auth/register', { name, email, password }).then(r => r.data),
   login: (email: string, password: string) =>
     http.post<AuthResponse>('/auth/login', { email, password }).then(r => r.data),
-  me: () => http.get<{ user: { id: number; name: string; email: string; picture: string } }>('/auth/me').then(r => r.data),
+  me: () => http.get<{ user: { id: number; name: string; email: string; picture: string; country?: string | null } }>('/auth/me').then(r => r.data),
   updateName: (name: string) => http.put<{ name: string }>('/auth/name', { name }).then(r => r.data),
-  getUsers: () => http.get<{ id: number; name: string; email: string; picture: string }[]>('/auth/users').then(r => r.data),
+  updateCountry: (country: string | null) => http.put<{ country: string | null }>('/auth/country', { country }).then(r => r.data),
+  getUsers: () => http.get<{ id: number; name: string; email: string; picture: string; country?: string | null }[]>('/auth/users').then(r => r.data),
 };
 
 export const matchesApi = {
@@ -40,4 +41,24 @@ export const predictionsApi = {
 
 export const leaderboardApi = {
   get: () => http.get<LeaderboardEntry[]>('/leaderboard').then(r => r.data),
+  mvp: () => http.get<MvpEntry | null>('/leaderboard/mvp').then(r => r.data),
+  recap: () => http.get<RecapEntry | null>('/leaderboard/recap').then(r => r.data),
+};
+
+export interface ProfileResponse {
+  user: { id: number; name: string; email: string; picture: string; country: string | null };
+  stats: ProfileStats;
+  badges: Badge[];
+  accuracyByMatchday: { label: string; pts: number; matches: number }[];
+  history: HistoryEntry[];
+}
+
+export const profileApi = {
+  getMe: () => http.get<ProfileResponse>('/profile/me').then(r => r.data),
+};
+
+export const outrightApi = {
+  getMine: () => http.get<OutrightPick>('/outright').then(r => r.data),
+  save: (picks: OutrightPick) => http.put<{ success: boolean }>('/outright', picks).then(r => r.data),
+  getAll: () => http.get<(OutrightPick & { user_id: number; name: string; picture: string; country: string | null })[]>('/outright/all').then(r => r.data),
 };

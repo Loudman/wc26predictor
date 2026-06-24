@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../App';
 import { authApi } from '../api/client';
+import { countryFlag } from '../data/nations';
 import clsx from 'clsx';
 
 export default function Header() {
   const { user, logout } = useAuth();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [modal, setModal] = useState<'name' | 'users' | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -25,6 +27,13 @@ export default function Header() {
     setMenuOpen(false);
     setModal(m);
   }
+
+  function goToProfile() {
+    setMenuOpen(false);
+    navigate('/profile');
+  }
+
+  const flag = countryFlag(user?.country);
 
   return (
     <>
@@ -48,7 +57,9 @@ export default function Header() {
               >
                 <img src={user.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=006847&color=fff`}
                   alt={user.name} className="w-7 h-7 rounded-full border border-gray-600" />
-                <span className="text-sm text-gray-300 hidden sm:block max-w-[120px] truncate">{user.name}</span>
+                <span className="text-sm text-gray-300 hidden sm:block max-w-[120px] truncate">
+                  {flag && <span className="mr-1">{flag}</span>}{user.name}
+                </span>
                 <svg className={clsx('w-3.5 h-3.5 text-gray-500 transition-transform', menuOpen && 'rotate-180')}
                   fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
@@ -58,10 +69,13 @@ export default function Header() {
               {menuOpen && (
                 <div className="absolute right-0 top-full mt-2 w-56 bg-gray-900 border border-gray-700 rounded-xl shadow-2xl overflow-hidden z-50">
                   <div className="px-4 py-3 border-b border-gray-800">
-                    <p className="text-sm font-semibold text-white truncate">{user.name}</p>
+                    <p className="text-sm font-semibold text-white truncate">
+                      {flag && <span className="mr-1">{flag}</span>}{user.name}
+                    </p>
                     <p className="text-xs text-gray-500 truncate">{user.email}</p>
                   </div>
                   <div className="py-1">
+                    <MenuItem icon="👤" onClick={goToProfile}>My Profile</MenuItem>
                     <MenuItem icon="✏️" onClick={() => openModal('name')}>Change name</MenuItem>
                     <MenuItem icon="👥" onClick={() => openModal('users')}>All players</MenuItem>
                   </div>
@@ -166,7 +180,7 @@ function ChangeNameModal({ onClose }: { onClose: () => void }) {
 // ---- Users Modal ----
 function UsersModal({ onClose }: { onClose: () => void }) {
   const { user: me } = useAuth();
-  const [users, setUsers] = useState<{ id: number; name: string; email: string; picture: string }[]>([]);
+  const [users, setUsers] = useState<{ id: number; name: string; email: string; picture: string; country?: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -192,6 +206,7 @@ function UsersModal({ onClose }: { onClose: () => void }) {
               />
               <div className="min-w-0">
                 <p className={clsx('text-sm font-medium truncate', u.id === me?.id ? 'text-wc-gold' : 'text-white')}>
+                  {countryFlag(u.country) && <span className="mr-1">{countryFlag(u.country)}</span>}
                   {u.name} {u.id === me?.id && <span className="text-xs font-normal">(you)</span>}
                 </p>
                 <p className="text-xs text-gray-500 truncate">{u.email}</p>
@@ -204,8 +219,8 @@ function UsersModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// ---- Shared Modal shell ----
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+// ---- Shared Modal shell (exported for reuse) ----
+export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div
       className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
