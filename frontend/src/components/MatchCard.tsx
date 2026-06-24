@@ -50,7 +50,11 @@ export function calcPoints(pred: Prediction, match: Match): number | null {
 
 export default function MatchCard({ match, myPrediction, onClick }: Props) {
   const isFinished = match.status === 'FINISHED';
-  const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED';
+  const isLive = match.status === 'IN_PLAY' || match.status === 'PAUSED' || (() => {
+    const kick = new Date(match.utcDate).getTime();
+    const now = Date.now();
+    return !isFinished && kick <= now && now <= kick + 2.5 * 60 * 60 * 1000;
+  })();
   const isScheduled = !isFinished && !isLive;
 
   const pts = myPrediction ? calcPoints(myPrediction, match) : null;

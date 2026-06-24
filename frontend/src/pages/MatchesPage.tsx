@@ -31,8 +31,8 @@ export default function MatchesPage() {
   }
 
   const filtered = matches.filter(m => {
-    if (filter === 'upcoming') return m.status === 'SCHEDULED' || m.status === 'TIMED';
-    if (filter === 'live') return m.status === 'IN_PLAY' || m.status === 'PAUSED';
+    if (filter === 'upcoming') return isUpcoming(m);
+    if (filter === 'live') return isLive(m);
     if (filter === 'finished') return m.status === 'FINISHED';
     return true;
   });
@@ -119,6 +119,22 @@ export default function MatchesPage() {
       )}
     </main>
   );
+}
+
+function isLive(m: Match): boolean {
+  if (m.status === 'IN_PLAY' || m.status === 'PAUSED') return true;
+  if (m.status === 'FINISHED') return false;
+  // Free API tier doesn't update status to IN_PLAY — detect by time window
+  const kick = new Date(m.utcDate).getTime();
+  const now = Date.now();
+  return kick <= now && now <= kick + 2.5 * 60 * 60 * 1000;
+}
+
+function isUpcoming(m: Match): boolean {
+  if (m.status === 'FINISHED') return false;
+  if (m.status === 'IN_PLAY' || m.status === 'PAUSED') return false;
+  const kick = new Date(m.utcDate).getTime();
+  return kick > Date.now();
 }
 
 function groupByDate(matches: Match[]): { date: string; matches: Match[] }[] {
