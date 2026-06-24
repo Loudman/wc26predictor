@@ -69,7 +69,7 @@ router.post('/register', async (req: Request, res: Response): Promise<void> => {
     res.status(409).json({ error: 'An account with this email already exists' }); return;
   }
 
-  const hash = await bcrypt.hash(password, 12);
+  const hash = await bcrypt.hash(password, 10);
   await db.execute({
     sql: 'INSERT INTO users (name, email, picture, password_hash) VALUES (?, ?, ?, ?)',
     args: [name.trim(), email.trim().toLowerCase(), '', hash],
