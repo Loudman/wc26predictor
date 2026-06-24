@@ -37,26 +37,29 @@ export interface TipResult {
 }
 
 // date → fixture list cache
-const fixtureCache = new Map<string, { id: number; homeTeam: string; awayTeam: string }[]>();
+const fixtureCache = new Map<string, { id: number; leagueId: number; leagueName: string; homeTeam: string; awayTeam: string }[]>();
 
 async function getFixturesForDate(date: string) {
   if (fixtureCache.has(date)) return fixtureCache.get(date)!;
-  const res = await client.get('/fixtures', {
-    params: { date, league: 1, season: 2026 },
-  });
+  // Search by date only — no league filter, so we catch WC2026 regardless of ID
+  const res = await client.get('/fixtures', { params: { date } });
   const response = res.data.response;
   if (!Array.isArray(response)) {
-    console.error('API-Football fixtures unexpected response:', JSON.stringify(res.data).slice(0, 200));
+    console.error('API-Football fixtures unexpected response:', JSON.stringify(res.data).slice(0, 300));
     return [];
   }
   const fixtures = (response as {
     fixture: { id: number };
+    league: { id: number; name: string };
     teams: { home: { name: string }; away: { name: string } };
   }[]).map(f => ({
     id: f.fixture.id,
+    leagueId: f.league.id,
+    leagueName: f.league.name,
     homeTeam: f.teams.home.name,
     awayTeam: f.teams.away.name,
   }));
+  console.log(`API-Football fixtures for ${date}:`, fixtures.map(f => `${f.homeTeam} vs ${f.awayTeam} (league: ${f.leagueName})`));
   fixtureCache.set(date, fixtures);
   return fixtures;
 }
@@ -64,6 +67,15 @@ async function getFixturesForDate(date: string) {
 // fixtureId → prediction cache (1 hour TTL)
 const predCache = new Map<number, { data: TipResult; fetchedAt: number }>();
 const PRED_TTL = 60 * 60 * 1000;
+
+export async function getFixturesDebug(date: string) {
+  try {
+    const fixtures = await getFixturesForDate(date);
+    return fixtures.map(f => `${f.homeTeam} vs ${f.awayTeam} (${f.leagueName})`);
+  } catch {
+    return [];
+  }
+}
 
 export async function getTipsForMatch(
   utcDate: string,

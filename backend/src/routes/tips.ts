@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import axios from 'axios';
 import { getWorldCupMatches } from '../services/footballData';
-import { getTipsForMatch } from '../services/apiFootball';
+import { getTipsForMatch, getFixturesDebug } from '../services/apiFootball';
 
 const router = Router();
 
@@ -42,7 +42,15 @@ router.get('/:matchId', async (req: Request, res: Response): Promise<void> => {
       match.awayTeam.name ?? '',
     );
 
-    if (!tips) { res.status(404).json({ error: 'No tips available for this fixture' }); return; }
+    if (!tips) {
+      const debug = await getFixturesDebug(match.utcDate.slice(0, 10));
+      res.status(404).json({
+        error: 'No tips available for this fixture',
+        searched: { date: match.utcDate.slice(0, 10), homeTeam: match.homeTeam.name, awayTeam: match.awayTeam.name },
+        apiFootballFixtures: debug,
+      });
+      return;
+    }
     res.json(tips);
   } catch (err: unknown) {
     const detail = err instanceof Error ? err.message : String(err);
