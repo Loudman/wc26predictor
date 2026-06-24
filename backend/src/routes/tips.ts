@@ -1,12 +1,30 @@
 import { Router, Request, Response } from 'express';
+import axios from 'axios';
 import { getWorldCupMatches } from '../services/footballData';
 import { getTipsForMatch } from '../services/apiFootball';
 
 const router = Router();
 
+// Diagnostic endpoint — returns key status + a raw API-Football probe
+router.get('/status', async (_req: Request, res: Response): Promise<void> => {
+  const key = process.env.RAPIDAPI_KEY;
+  if (!key) { res.json({ ok: false, reason: 'RAPIDAPI_KEY not set' }); return; }
+
+  try {
+    const probe = await axios.get('https://api-football-v1.p.rapidapi.com/v3/status', {
+      headers: { 'X-RapidAPI-Key': key, 'X-RapidAPI-Host': 'api-football-v1.p.rapidapi.com' },
+      timeout: 6000,
+    });
+    res.json({ ok: true, apiFootball: probe.data });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.json({ ok: false, reason: message });
+  }
+});
+
 router.get('/:matchId', async (req: Request, res: Response): Promise<void> => {
   if (!process.env.RAPIDAPI_KEY) {
-    res.status(501).json({ error: 'Tips not configured' });
+    res.status(501).json({ error: 'RAPIDAPI_KEY not set in environment' });
     return;
   }
 
@@ -24,12 +42,12 @@ router.get('/:matchId', async (req: Request, res: Response): Promise<void> => {
       match.awayTeam.name ?? '',
     );
 
-    if (!tips) { res.status(404).json({ error: 'No tips available' }); return; }
+    if (!tips) { res.status(404).json({ error: 'No tips available for this fixture' }); return; }
     res.json(tips);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Tips error:', message);
-    res.status(502).json({ error: 'Failed to fetch tips', detail: message });
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error('Tips error:', detail);
+    res.status(502).json({ error: 'Failed to fetch tips', detail });
   }
 });
 

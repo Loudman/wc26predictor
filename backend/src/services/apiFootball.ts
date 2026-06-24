@@ -47,7 +47,12 @@ async function getFixturesForDate(date: string) {
   const res = await client.get('/fixtures', {
     params: { date, league: 1, season: 2026 },
   });
-  const fixtures = (res.data.response as {
+  const response = res.data.response;
+  if (!Array.isArray(response)) {
+    console.error('API-Football fixtures unexpected response:', JSON.stringify(res.data).slice(0, 200));
+    return [];
+  }
+  const fixtures = (response as {
     fixture: { id: number };
     teams: { home: { name: string }; away: { name: string } };
   }[]).map(f => ({
