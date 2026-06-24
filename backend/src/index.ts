@@ -29,7 +29,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 
 // Serve frontend static files in production
 if (process.env.VERCEL) {
-  const dist = path.join(__dirname, '../../frontend/dist');
+  const dist = path.join(process.cwd(), 'frontend/dist');
   app.use(express.static(dist));
   app.get('*', (_req, res) => res.sendFile(path.join(dist, 'index.html')));
 }
